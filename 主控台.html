@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>駕駛艙中控台</title>
+<!-- I4582 W7 駕駛艙中控台基本款（2026-11-07 起，11-08 改成基本款）。七區：老闆的目標、現在做到哪、跟 AI 代表的對話區、AI 在等你的事與 AI 團隊、
+     AI 團隊怎麼分工（一般公司與 AI 團隊兩欄對照）、分工流程圖、成品櫃；第八區「我的公司加的」是學生跟 AI 團隊自己加的。
+     七區不能少，樣子可以改、可以再加，清單在 中控台基本款.md。資料由 .opencode/plugins/主控台.js 送來，公司寫在 公司/公司資料.json，加的寫在 公司/中控台加的.json。 -->
+<style>
+  :root {
+    --底:#0e141b; --卡:#151d27; --卡2:#1b2531; --線:#2a3644; --字:#e6edf3; --淡:#8b98a5;
+    --主:#4ea1ff; --隊:#38c7a8; --人:#c9a26b; --老闆:#ff9f43; --好:#3fbf6f; --壞:#ff5d5d; --等:#f5c542; --灰:#5d6b79;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--底); color:var(--字); font:15px/1.6 -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; }
+  header { position:sticky; top:0; z-index:5; background:#0a0f15; border-bottom:1px solid var(--線); padding:12px 24px; display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+  header h1 { margin:0; font-size:20px; letter-spacing:.5px; }
+  header h1 small { color:var(--淡); font-weight:400; font-size:14px; margin-left:8px; }
+  .燈 { display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--淡); }
+  .燈 i { width:10px; height:10px; border-radius:50%; background:var(--灰); display:inline-block; }
+  .燈.忙 i { background:var(--隊); box-shadow:0 0 8px var(--隊); animation:閃 1.2s infinite; }
+  @keyframes 閃 { 50% { opacity:.35; } }
+  main { max-width:1360px; margin:0 auto; padding:18px 24px 60px; display:grid; gap:16px; grid-template-columns:7fr 5fr; }
+  section { background:var(--卡); border:1px solid var(--線); border-radius:14px; padding:16px 18px; min-width:0; }
+  .全 { grid-column:1 / -1; }
+  h2 { margin:0 0 2px; font-size:14px; letter-spacing:1px; color:var(--主); font-weight:700; }
+  h2 b { color:var(--淡); font-weight:400; margin-left:6px; letter-spacing:0; }
+  .說明 { color:var(--淡); font-size:13px; margin:0 0 12px; }
+  .空 { color:var(--淡); font-style:italic; }
+  /* 一、老闆的目標 */
+  #目標 { border-color:var(--老闆); background:linear-gradient(180deg,#1f1a14,var(--卡)); }
+  .目標句 { font-size:22px; font-weight:700; margin:4px 0; }
+  .客人 { color:var(--淡); margin-bottom:12px; }
+  .標準們 { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px; }
+  .標準 { background:var(--卡2); border:1px solid var(--線); border-left:5px solid var(--灰); border-radius:10px; padding:10px 12px; font-size:14px; }
+  .標準.過 { border-left-color:var(--好); } .標準.沒過 { border-left-color:var(--壞); } .標準.驗不到 { border-left-color:var(--等); }
+  .標準 .頭 { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
+  .標準 .小 { color:var(--淡); font-size:12px; margin-top:6px; }
+  .章 { display:inline-block; border-radius:999px; padding:0 10px; font-size:12px; font-weight:700; color:#0e141b; background:var(--灰); white-space:nowrap; }
+  .章.過 { background:var(--好); } .章.沒過 { background:var(--壞); } .章.驗不到 { background:var(--等); } .章.還沒驗 { background:var(--灰); color:#fff; }
+  /* 二、現在做到哪 */
+  .階段列 { display:flex; gap:0; margin:8px 0; }
+  .階段 { flex:1; text-align:center; padding:8px 4px; font-size:13px; color:var(--淡); background:var(--卡2); border:1px solid var(--線); position:relative; }
+  .階段:first-child { border-radius:10px 0 0 10px; } .階段:last-child { border-radius:0 10px 10px 0; }
+  .階段.過了 { color:var(--好); background:#13261b; }
+  .階段.現在 { color:#0e141b; background:var(--主); font-weight:700; }
+  .階段.卡 { background:var(--壞); color:#fff; font-weight:700; }
+  .現在 { display:grid; grid-template-columns:auto 1fr; gap:2px 12px; font-size:14px; }
+  .現在 dt { color:var(--淡); } .現在 dd { margin:0; }
+  /* 三、對話區 */
+  #對話 { display:flex; flex-direction:column; }
+  #話們 { flex:1; min-height:320px; max-height:520px; overflow:auto; background:#0b1117; border:1px solid var(--線); border-radius:10px; padding:10px; }
+  .一則 { margin:8px 0; padding:8px 12px; border-radius:10px; white-space:pre-wrap; word-break:break-word; max-width:92%; }
+  .一則.老闆 { background:#2a2116; border:1px solid #4a3a22; margin-left:auto; }
+  .一則.代表 { background:#12232a; border:1px solid #1f3c46; }
+  .一則 .誰 { font-size:12px; color:var(--淡); margin-bottom:2px; }
+  .一則 .工具 { font-size:12px; color:var(--隊); margin-top:4px; }
+  #話們 > .工具 { font-size:12px; color:var(--隊); }
+  textarea { width:100%; min-height:72px; margin-top:10px; font:inherit; color:var(--字); background:#0b1117; padding:10px; border:1px solid var(--線); border-radius:10px; resize:vertical; }
+  .鍵列 { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; align-items:center; }
+  button { font:inherit; font-weight:700; border:0; border-radius:10px; padding:9px 16px; cursor:pointer; color:#0e141b; background:var(--主); }
+  button.討論 { background:#2f4257; color:var(--字); }
+  button.做 { background:var(--好); }
+  button.停 { background:var(--壞); color:#fff; }
+  button:disabled { opacity:.45; cursor:default; }
+  #送出狀態 { color:var(--淡); font-size:13px; }
+  /* 四、AI 在等你的事、AI 團隊 */
+  #等你 { border-color:var(--等); }
+  .題 { background:#221d0e; border:1px solid #4d4116; border-radius:10px; padding:10px 12px; margin:8px 0; }
+  .題 .建議 { color:var(--淡); font-size:13px; margin:4px 0 8px; }
+  .題 .選項 { display:flex; flex-wrap:wrap; gap:8px; }
+  .題 .選項 button { background:var(--等); padding:6px 12px; font-size:14px; }
+  .題.答了 { opacity:.6; }
+  .團隊 { display:flex; flex-direction:column; gap:6px; }
+  .員 { display:flex; gap:8px; align-items:baseline; font-size:14px; }
+  .員 .點 { width:8px; height:8px; border-radius:50%; background:var(--灰); flex:none; }
+  .員 .點.在做 { background:var(--隊); box-shadow:0 0 6px var(--隊); }
+  .員 .為 { color:var(--淡); font-size:12px; }
+  .待辦 { margin:8px 0 0; padding:0; list-style:none; font-size:13px; }
+  .待辦 li { padding:3px 0; color:var(--淡); } .待辦 li.in_progress { color:var(--主); font-weight:700; } .待辦 li.completed { color:var(--好); text-decoration:line-through; }
+  /* 五、AI 團隊怎麼分工 */
+  .對照 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .欄 h3 { margin:0 0 8px; font-size:15px; }
+  .欄.人 h3 { color:var(--人); } .欄.隊 h3 { color:var(--隊); }
+  .棒 { border:1px solid var(--線); border-radius:10px; padding:8px 12px; background:var(--卡2); font-size:14px; }
+  .欄.人 .棒 { border-left:4px solid var(--人); } .欄.隊 .棒 { border-left:4px solid var(--隊); }
+  .棒 b { display:block; }
+  .交接 { text-align:center; font-size:12px; color:var(--壞); padding:3px 0; }
+  .交接::before { content:"▼ 交給下一個人時可能掉的："; }
+  .接 { text-align:center; color:var(--隊); font-size:12px; padding:2px 0; }
+  .計數 { margin:4px 0 14px; font-size:16px; line-height:1.8; }
+  .計數 .大 { font-size:26px; font-weight:800; margin:0 2px; }
+  .計數 .人 { color:var(--人); } .計數 .隊 { color:var(--隊); } .計數 .老闆 { color:var(--老闆); }
+  .理由 { margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:14px; }
+  .理由 h4 { margin:0 0 4px; color:var(--主); font-size:13px; }
+  .理由 p { margin:0; white-space:pre-wrap; }
+  /* 六、流程圖 */
+  .流程 { display:flex; flex-wrap:wrap; align-items:stretch; gap:4px; }
+  .節 { width:190px; border:2px solid var(--線); border-radius:12px; padding:8px 10px; background:var(--卡2); font-size:13px; position:relative; }
+  .節 .號 { font-weight:800; color:var(--淡); }
+  .節 .做 { font-size:14px; color:var(--字); margin:2px 0; }
+  .節 .誰 { color:var(--淡); }
+  .節.完成 { border-color:var(--好); } .節.完成 .號 { color:var(--好); }
+  .節.進行中 { border-color:var(--主); box-shadow:0 0 0 3px #1d3a5c, 0 0 14px #2c6cb3; }
+  .節.卡住 { border-color:var(--壞); }
+  .節.老闆 { border-style:dashed; border-color:var(--老闆); background:#241a10; }
+  .節 .標 { display:inline-block; margin-top:4px; font-size:11px; font-weight:800; border-radius:999px; padding:0 8px; background:var(--灰); color:#fff; }
+  .節.完成 .標 { background:var(--好); color:#0e141b; } .節.進行中 .標 { background:var(--主); color:#0e141b; } .節.卡住 .標 { background:var(--壞); }
+  .箭 { align-self:center; color:var(--淡); font-size:18px; }
+  .圖例 { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--淡); margin-bottom:10px; }
+  .圖例 span::before { content:""; display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-2px; border:2px solid var(--線); }
+  .圖例 .完成::before { border-color:var(--好); } .圖例 .進行中::before { border-color:var(--主); background:#1d3a5c; } .圖例 .老闆::before { border-color:var(--老闆); border-style:dashed; } .圖例 .卡住::before { border-color:var(--壞); }
+  /* 七、成品櫃 */
+  .櫃 { display:grid; grid-template-columns:280px 1fr; gap:14px; }
+  .件們 { display:flex; flex-direction:column; gap:8px; }
+  .件 { text-align:left; background:var(--卡2); color:var(--字); border:1px solid var(--線); border-radius:10px; padding:8px 12px; font-weight:400; }
+  .件.選 { border-color:var(--隊); box-shadow:0 0 0 2px #17463c; }
+  .件 b { display:block; } .件 small { color:var(--淡); }
+  #看 { background:#0b1117; border:1px solid var(--線); border-radius:10px; min-height:420px; display:flex; flex-direction:column; }
+  #看 .頭 { padding:8px 12px; border-bottom:1px solid var(--線); display:flex; justify-content:space-between; gap:8px; font-size:13px; color:var(--淡); }
+  #看 .頭 a { color:var(--主); }
+  #看 iframe, #看 video, #看 img { width:100%; flex:1; min-height:480px; border:0; background:#fff; }
+  #看 video, #看 img { object-fit:contain; background:#000; }
+  #看 pre { margin:0; padding:12px; white-space:pre-wrap; flex:1; overflow:auto; max-height:600px; }
+  /* 七之二、交到客人手上 */
+  .交們 { display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+  .交 { display:grid; grid-template-columns:1fr 2.2fr 1.2fr auto; gap:10px; align-items:start; background:var(--卡2); border:1px solid var(--線); border-left:5px solid var(--灰); border-radius:10px; padding:10px 12px; font-size:14px; }
+  .交.準備好了 { border-left-color:var(--等); } .交.已交出去 { border-left-color:var(--主); } .交.客人用過了 { border-left-color:var(--好); }
+  .交 small { display:block; color:var(--淡); font-size:12px; }
+  .交 a { color:var(--主); word-break:break-all; }
+  .章.準備好了 { background:var(--等); } .章.已交出去 { background:var(--主); } .章.客人用過了 { background:var(--好); }
+  @media (max-width:980px) { .交 { grid-template-columns:1fr; } }
+  /* 八、我的公司加的 */
+  .加區們 { display:grid; grid-template-columns:repeat(auto-fit,minmax(420px,1fr)); gap:14px; }
+  .加區 { background:var(--卡2); border:1px solid var(--線); border-radius:10px; overflow:hidden; display:flex; flex-direction:column; }
+  .加區 .頭 { padding:8px 12px; border-bottom:1px solid var(--線); }
+  .加區 .頭 small { display:block; color:var(--淡); font-size:12px; }
+  .加區 iframe, .加區 img, .加區 video { width:100%; min-height:320px; border:0; background:#fff; }
+  .加區 pre { margin:0; padding:10px 12px; white-space:pre-wrap; max-height:340px; overflow:auto; font-size:13px; }
+  .加鍵們 { display:flex; flex-direction:column; gap:10px; margin-top:14px; }
+  .加鍵 { background:var(--卡2); border:1px solid var(--線); border-radius:10px; padding:10px 12px; }
+  .加鍵 .列 { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .加鍵 small { color:var(--淡); }
+  .加鍵 pre { margin:8px 0 0; padding:8px 10px; background:#0b1117; border-radius:8px; white-space:pre-wrap; max-height:200px; overflow:auto; font-size:12px; }
+  @media (max-width:980px) { main { grid-template-columns:1fr; } .對照, .理由, .櫃 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="公司名稱">駕駛艙中控台<small>你是這間公司唯一的真人，其他都是 AI</small></h1>
+  <span class="燈" id="燈"><i></i><span>AI 代表在等你</span></span>
+  <span class="燈" id="更新">　</span>
+</header>
+<main>
+  <section id="目標" class="全">
+    <h2>一、老闆的目標<b>你要公司做到什麼、怎樣算做到了</b></h2>
+    <div class="目標句" id="目標句"><span class="空">公司還沒開。回 OpenCode 跟你的分身走完第 1 到 3 步，再到下面的對話區按「照這樣做」</span></div>
+    <div class="客人" id="客人"></div>
+    <div class="標準們" id="標準們"></div>
+  </section>
+
+  <section class="全">
+    <h2>二、現在做到哪</h2>
+    <div class="階段列" id="階段列"></div>
+    <dl class="現在" id="現在"></dl>
+  </section>
+
+  <section id="對話">
+    <h2>三、跟 AI 代表談<b>同一段對話一直接著談</b></h2>
+    <p class="說明">想法、疑問、要改的地方都打在這裡。按「跟它討論」它只想、只回話，不動任何檔；談定了按「照這樣做」它才開工。</p>
+    <div id="出錯" style="display:none;background:#3a1414;border:1px solid var(--壞);border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:14px"></div>
+    <div id="話們"><div class="空">還沒開始談。第一次就打「請照課堂報告開公司」，按「照這樣做」。</div></div>
+    <textarea id="字" placeholder="例如：第一關太難了，敵人少一半；或：請照課堂報告開公司"></textarea>
+    <div class="鍵列">
+      <button class="討論" id="鍵討論">跟它討論（它不動手）</button>
+      <button class="做" id="鍵做">照這樣做</button>
+      <button class="停" id="鍵停">請它先停下來</button>
+      <label style="font-size:13px;color:var(--淡)">用哪個頭腦：<select id="頭腦" style="font:inherit;font-size:13px;background:#0b1117;color:var(--字);border:1px solid var(--線);border-radius:8px;padding:4px">
+        <option value="">照預設</option>
+        <option>opencode/big-pickle</option><option>opencode/beam-free</option><option>opencode/glm-5.3-flash-free</option>
+        <option>opencode/deepseek-v4.1-flash-free</option><option>opencode/mimo-v2.6-flash-free</option><option>opencode/nemotron-3.5-lightning-free</option>
+        <option>opencode/nemotron-3.5-super-vl-free</option><option>opencode/flint-40b-free</option><option>opencode/crouton-alpha-free</option><option>opencode/pulse-alpha-free</option>
+      </select></label>
+      <span id="送出狀態"></span>
+    </div>
+  </section>
+
+  <div style="display:flex; flex-direction:column; gap:16px; min-width:0;">
+    <section id="等你">
+      <h2>四、AI 在等你的事</h2>
+      <p class="說明">要你決定的事會出現在這裡，點一個選項就回答了。</p>
+      <div id="題們"><div class="空">（目前沒有）</div></div>
+    </section>
+    <section>
+      <h2>你的 AI 團隊<b>AI 代表跟你談，談完把工作派給團隊裡其他的 AI</b></h2>
+      <div class="團隊" id="團隊"><div class="空">（還沒排）</div></div>
+      <ul class="待辦" id="待辦"></ul>
+    </section>
+  </div>
+
+  <section class="全">
+    <h2>五、AI 團隊怎麼分工<b>同一件事，一般公司會怎麼分給不同的人；你的 AI 團隊怎麼分</b></h2>
+    <div class="計數" id="計數"></div>
+    <div class="對照">
+      <div class="欄 人"><h3>一般公司會這樣分</h3><div id="人"><div class="空">（還沒排）</div></div></div>
+      <div class="欄 隊"><h3>AI 團隊這樣分</h3><div id="隊"><div class="空">（還沒排）</div></div></div>
+    </div>
+    <div class="理由">
+      <div><h4>比一般公司少交了哪幾次</h4><p id="少了"></p></div>
+      <div><h4>為什麼這樣分</h4><p id="為什麼"></p></div>
+    </div>
+  </section>
+
+  <section class="全">
+    <h2>六、分工流程圖<b>做到哪一步就亮哪一格</b></h2>
+    <div class="圖例"><span class="完成">完成</span><span class="進行中">正在做</span><span class="老闆">要你判斷</span><span class="卡住">卡住</span></div>
+    <div class="流程" id="流程"><div class="空">（還沒排）</div></div>
+  </section>
+
+  <section class="全">
+    <h2>七、成品櫃與交到客人手上<b>公司真的做出來的東西，點一下就打開；交到客人手上，驗收標準才驗得到</b></h2>
+    <div class="櫃">
+      <div class="件們" id="件們"><div class="空">（還沒有成品）</div></div>
+      <div id="看"><div class="頭"><span>選左邊一件成品</span></div></div>
+    </div>
+    <h3 style="margin:18px 0 0;font-size:15px;color:var(--老闆)">交到客人手上</h3>
+    <div class="交們" id="交們"><div class="空">還沒有交出去。你親自用過成品之後，在對話區跟 AI 代表說「準備交給客人」，它會準備到最後一步，上線、登入、傳給客人那一下由你按。</div></div>
+  </section>
+
+  <section class="全" id="加的">
+    <h2>八、我的公司加的<b>上面七區是每間公司都有的基本款；這一區是你的公司才有的</b></h2>
+    <p class="說明" id="加的說明">還沒有加東西。成品做出來之後，你的分身會陪你想：你的公司還要在這裡看到什麼、按下去要做什麼，再請 AI 團隊做出來、接上。</p>
+    <div class="加區們" id="加區們"></div>
+    <div class="加鍵們" id="加鍵們"></div>
+  </section>
+</main>
+<script>
+const 鑰匙 = "__鑰匙__";
+const 階段們 = ["排策略與分工", "做成品", "等你判斷", "對驗收", "交給老闆"];
+const $ = id => document.getElementById(id);
+const 淨 = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const 有 = v => v !== undefined && v !== null && String(v).trim() !== "";
+let 上次資料 = "", 上次對話 = "", 選的件 = "";
+
+async function 送(路, 物) {
+  const r = await fetch(路, { method:"POST", headers:{ "content-type":"application/json", "x-key":鑰匙 }, body:JSON.stringify(物 || {}) });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+async function 說(模式) {
+  const 話 = $("字").value.trim();
+  if (!話) { $("送出狀態").textContent = "先打字再按"; return; }
+  $("送出狀態").textContent = "送出中⋯";
+  try { await 送("/說", { 模式, 話, 模型:$("頭腦").value }); $("字").value = ""; $("送出狀態").textContent = 模式 === "討論" ? "送出了，它在想" : "送出了，它開工了"; 讀對話(); }
+  catch (e) { $("送出狀態").textContent = "沒送出去：" + e.message + "。中控台可能斷了，回 OpenCode 跟分身說"; }
+}
+$("鍵討論").onclick = () => 說("討論");
+$("鍵做").onclick = () => 說("照做");
+try { const 記 = localStorage.getItem("頭腦"); if (記 !== null) $("頭腦").value = 記; } catch {}
+$("頭腦").onchange = () => { try { localStorage.setItem("頭腦", $("頭腦").value); } catch {} };
+$("鍵停").onclick = async () => { try { await 送("/停"); $("送出狀態").textContent = "已請它停下來"; } catch (e) { $("送出狀態").textContent = "停不下來：" + e.message; } };
+$("字").addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) 說("討論"); });
+
+async function 回答(題目, 選項) {
+  try { await 送("/說", { 模式:"回答", 模型:$("頭腦").value, 話:"題目：「" + 題目 + "」\n我選：「" + 選項 + "」" }); $("送出狀態").textContent = "回答送出了"; }
+  catch (e) { $("送出狀態").textContent = "沒送出去：" + e.message; }
+}
+
+function 畫資料(d) {
+  if (d.還沒有) {
+    $("目標句").innerHTML = '<span class="空">' + 淨(d.還沒有 === "公司還沒蓋" ? "公司還沒開。回 OpenCode 跟你的分身走完第 1 到 3 步，再到下面的對話區打「請照課堂報告開公司」，按「照這樣做」" : d.還沒有) + "</span>";
+    畫階段({}); return;
+  }
+  $("公司名稱").innerHTML = 淨(d.公司名稱 || "還沒取名") + "<small>駕駛艙中控台</small>";
+  $("目標句").textContent = d.老闆的目標 || "（目標還沒寫）";
+  $("客人").textContent = 有(d.第一位客人) ? "第一位客人：" + d.第一位客人 : "";
+  const 標 = d.驗收標準 || [];
+  $("標準們").innerHTML = 標.length ? 標.map((s, i) => {
+    const 果 = s.結果 || "還沒驗"; const 類 = ["過","沒過","驗不到"].find(k => 果.startsWith(k)) || "還沒驗";
+    return `<div class="標準 ${類}"><div class="頭"><span><b>${i + 1}.</b> ${淨(s.標準)}</span><span class="章 ${類}">${淨(果)}</span></div>
+      <div class="小">${淨([s.誰檢查, s.什麼時候].filter(有).join("・"))}${有(s.什麼情況沒過) ? "；沒過的情況：" + 淨(s.什麼情況沒過) : ""}</div>
+      ${有(s.證據) ? `<div class="小">證據：${淨(s.證據)}</div>` : ""}</div>`;
+  }).join("") : '<div class="空">驗收標準還沒抄進來</div>';
+
+  畫階段(d.目前階段 || {});
+
+  const 題 = d.要老闆決定 || [];
+  const 未答 = 題.filter(q => !有(q.老闆的決定)), 已答 = 題.filter(q => 有(q.老闆的決定));
+  $("題們").innerHTML = 題.length ? 未答.concat(已答).map(q => `<div class="題 ${有(q.老闆的決定) ? "答了" : ""}"><b>${淨(q.題目)}</b>
+      ${有(q.公司的建議) ? `<div class="建議">公司的建議：${淨(q.公司的建議)}</div>` : ""}
+      ${有(q.老闆的決定) ? `<div class="建議">你決定了：${淨(q.老闆的決定)}</div>` :
+        `<div class="選項">${(q.選項 || []).filter(有).map(o => `<button data-題="${淨(q.題目)}" data-選="${淨(o)}">${淨(o)}</button>`).join("") || '<span class="建議">在對話區回答它</span>'}</div>`}
+    </div>`).join("") : '<div class="空">（目前沒有）</div>';
+  $("題們").querySelectorAll("button[data-選]").forEach(b => b.onclick = () => 回答(b.dataset.題, b.dataset.選));
+
+  const 團 = d.AI團隊 || [];
+  if (團.length) $("團隊").dataset.檔 = JSON.stringify(團);
+
+  const 策 = d.策略 || {}, 人 = 策.人的分法 || [], 隊 = 策.AI團隊的分法 || 策.龍的拆法 || [], 流 = d.流程 || [];
+  $("人").innerHTML = 人.length ? 人.map((r, i) => `<div class="棒"><b>${淨(r.誰)}</b>${淨(r.做什麼)}</div>` + (i < 人.length - 1 ? `<div class="交接">${淨(r.交給下一棒時會掉什麼 || "")}</div>` : "")).join("") : '<div class="空">（還沒排）</div>';
+  $("隊").innerHTML = 隊.length ? 隊.map((r, i) => `<div class="棒"><b>${淨(r.代號 || "")}</b>${淨(r.做什麼)}</div>` + (i < 隊.length - 1 ? '<div class="接">▼</div>' : "")).join("") : '<div class="空">（還沒排）</div>';
+  const 人交接 = Math.max(人.length - 1, 0);
+  // AI 團隊那一邊只算 AI 之間把工作交給下一位；停下來等老闆決定的那幾步另外算
+  const AI步 = 流.filter(s => !s.老闆判斷); let 隊交 = 0;
+  for (let i = 1; i < AI步.length; i++) if (String(AI步[i].誰做 || "") !== String(AI步[i-1].誰做 || "")) 隊交++;
+  const 等老闆 = 流.filter(s => s.老闆判斷).length;
+  $("計數").innerHTML = 人.length ? `同一件事做完，<span class="人">一般公司要把工作交給下一個人<span class="大">${人交接}</span>次</span>，<span class="隊">${隊交 === 0 ? "AI 團隊從頭到尾是同一位在做，不用交" : `AI 團隊${隊交 < 人交接 ? "只要" : "要"}交<span class="大">${隊交}</span>次`}</span>。`
+    + (等老闆 ? `<br><span class="老闆">其中有<span class="大">${等老闆}</span>步，AI 團隊會停下來等你決定，就是下面流程圖上的橘色框。</span>` : "") : "";
+  $("少了").textContent = 策.少了哪些交接 || "";
+  $("為什麼").textContent = 策.為什麼這樣拆 || "";
+
+  $("流程").innerHTML = 流.length ? 流.map((s, i) => {
+    const 狀 = s.狀態 || "未開始";
+    return `<div class="節 ${淨(狀)} ${s.老闆判斷 ? "老闆" : ""}"><div class="號">${淨(s.代號 || "N" + (i + 1))}</div><div class="做">${淨(s.做什麼)}</div>
+      <div class="誰">${s.老闆判斷 ? "你判斷" : 淨(s.誰做 || "")}</div><span class="標">${淨(狀 === "進行中" ? "正在做" : 狀)}</span></div>` + (i < 流.length - 1 ? '<div class="箭">→</div>' : "");
+  }).join("") : '<div class="空">（還沒排）</div>';
+
+  const 件 = d.成品 || [];
+  $("件們").innerHTML = 件.length ? 件.map(p => `<button class="件 ${p.檔案 === 選的件 ? "選" : ""}" data-檔="${淨(p.檔案)}"><b>${淨(p.名稱)}</b><small>第 ${淨(p.版本 || 1)} 版${(p.對到標準 || []).length ? "・對到標準 " + 淨(p.對到標準.join("、")) : ""}</small><br><small>${淨(p.說明 || "")}</small></button>`).join("") : '<div class="空">（還沒有成品）</div>';
+  $("件們").querySelectorAll(".件").forEach(b => b.onclick = () => 打開(b.dataset.檔));
+
+  const 交 = d.交給客人 || [];
+  $("交們").innerHTML = 交.length ? 交.map(x => {
+    const 狀 = ["客人用過了","已交出去","準備好了"].find(k => String(x.狀態 || "").startsWith(k)) || "還沒交";
+    const 連 = 有(x.連結) ? (/^https?:\/\//.test(x.連結) ? `<a href="${淨(x.連結)}" target="_blank">${淨(x.連結)}</a>` : 淨(x.連結)) : "";
+    return `<div class="交 ${狀}"><div><b>${淨(x.成品 || "")}</b><small>交給：${淨(x.交給誰 || "（還沒寫）")}</small></div>
+      <div><small>怎麼交</small>${淨(x.怎麼交 || "")}${連 ? `<small>連結或檔案</small>${連}` : ""}</div>
+      <div><small>客人用完說了什麼</small>${有(x.客人說了什麼) ? 淨(x.客人說了什麼) : '<span class="空">還沒有</span>'}${(x.對到標準 || []).length ? `<small>對到驗收標準 ${淨(x.對到標準.join("、"))}</small>` : ""}</div>
+      <span class="章 ${狀}">${淨(x.狀態 || "還沒交")}</span></div>`;
+  }).join("") : $("交們").innerHTML;
+}
+
+function 畫階段(現) {
+  const 名 = 現.階段 || "";
+  const 卡 = 名.includes("卡住");
+  const 第 = 階段們.findIndex(s => 名.includes(s));
+  $("階段列").innerHTML = 階段們.map((s, i) => `<div class="階段 ${i === 第 ? "現在" : (第 > i ? "過了" : "")}">${s}</div>`).join("") + (卡 ? '<div class="階段 卡">卡住了</div>' : "");
+  $("現在").innerHTML = 名 ? `<dt>正在做</dt><dd>${淨(現.正在做 || "")}</dd><dt>下一步</dt><dd>${淨(現.下一步 || "")}</dd><dt>更新</dt><dd>${淨(現.更新時間 || "")}</dd>` : "";
+}
+
+function 打開(檔) {
+  選的件 = 檔;
+  document.querySelectorAll(".件").forEach(b => b.classList.toggle("選", b.dataset.檔 === 檔));
+  const 路 = "/成品/" + String(檔).replace(/^成品[\\/]/, "").split(/[\\/]/).map(encodeURIComponent).join("/");
+  const 副 = (檔.split(".").pop() || "").toLowerCase();
+  let 身 = "";
+  if (["html","htm","pdf"].includes(副)) 身 = `<iframe src="${路}"></iframe>`;
+  else if (["mp4","webm"].includes(副)) 身 = `<video src="${路}" controls></video>`;
+  else if (["mp3","wav","m4a"].includes(副)) 身 = `<audio src="${路}" controls style="margin:20px"></audio>`;
+  else if (["png","jpg","jpeg","gif","svg","webp"].includes(副)) 身 = `<img src="${路}" alt="">`;
+  else 身 = `<pre>讀取中⋯</pre>`;
+  $("看").innerHTML = `<div class="頭"><span>${淨(檔)}</span><a href="${路}" target="_blank">開新分頁看</a></div>` + 身;
+  if (身.startsWith("<pre")) fetch(路).then(r => r.text()).then(t => { const p = $("看").querySelector("pre"); if (p) p.textContent = t; });
+}
+
+function 畫對話(c) {
+  $("燈").className = "燈" + (c.忙 ? " 忙" : "");
+  $("燈").querySelector("span").textContent = c.忙 ? "AI 代表在做事" : "AI 代表在等你";
+  const 錯 = $("出錯");
+  if (c.卡住) { 錯.style.display = "block"; 錯.innerHTML = "<b>AI 代表好像卡住了</b>：顯示在做事，可是已經 " + 淨(c.幾分鐘沒動) + " 分鐘沒有任何動靜。東西都存在資料夾裡，不會掉。<br><button id='鍵重來' style='margin-top:6px'>卡住了，換一段新對話接著做</button>　想換頭腦就先在下面選好再按。"; const k = $("鍵重來"); if (k) k.onclick = async () => { try { await 送("/重來", { 模型:$("頭腦").value }); $("送出狀態").textContent = "換了一段新對話，它會先讀公司資料再接著做"; } catch (e) { $("送出狀態").textContent = "沒換成：" + e.message; } }; }
+  else if (c.錯誤) { 錯.style.display = "block"; 錯.innerHTML = "<b>AI 代表上一次出錯了</b>（" + 淨(c.模型 || "") + "）：" + 淨(c.錯誤) + "<br>多半是這個頭腦的免費額度用完了。在下面「用哪個頭腦」換一個，再把剛剛那句話送一次。換了還是不行，回 OpenCode 把錯誤貼給你的 AI 分身。"; }
+  else 錯.style.display = "none";
+  const 訊 = c.訊息 || [];
+  const 盒 = $("話們"), 在底 = 盒.scrollHeight - 盒.scrollTop - 盒.clientHeight < 40;
+  if (訊.length) {
+    // 連續幾則只有動手、沒有字的，合成一行，不然對話區會被「read、bash」洗掉
+    const 併 = [];
+    for (const m of 訊) {
+      const 前 = 併[併.length - 1];
+      if (!m.字 && 前 && 前.誰 === m.誰 && !前.字) { 前.工具 = 前.工具.concat(m.工具); continue; }
+      併.push({ ...m, 工具: [...(m.工具 || [])] });
+    }
+    盒.innerHTML = 併.map(m => {
+      if (!m.字 && m.誰 !== "老闆") {
+        const 數 = {}; m.工具.forEach(t => { const k = t.replace("（進行中）", ""); 數[k] = (數[k] || 0) + 1; });
+        return `<div class="工具" style="margin:4px 0 4px 6px">AI 代表動手：${淨(Object.entries(數).map(([k, n]) => n > 1 ? k + "×" + n : k).join("、"))}</div>`;
+      }
+      const 字 = (m.字 || "").replace(/^【中控台・[^】]*】\n?/, "");
+      return `<div class="一則 ${m.誰 === "老闆" ? "老闆" : "代表"}"><div class="誰">${m.誰 === "老闆" ? "你" : "AI 代表"}</div>${淨(字).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")}${(m.工具 || []).length ? `<div class="工具">動手：${淨(m.工具.join("、"))}</div>` : ""}</div>`;
+    }).join("");
+    if (在底) 盒.scrollTop = 盒.scrollHeight;
+  }
+  let 團 = []; try { 團 = JSON.parse($("團隊").dataset.檔 || "[]"); } catch {}
+  const 幫 = c.幫手 || [];
+  const 列 = [`<div class="員"><span class="點 ${c.忙 ? "在做" : ""}"></span><b>AI 代表</b><span class="為">跟你談，談完把工作派給團隊，最後交給你</span></div>`]
+    .concat(團.filter(t => 有(t.名字) && t.名字 !== "AI 代表").map(t => `<div class="員"><span class="點 ${幫.some(h => h.在做 && String(h.名字).includes(t.名字)) ? "在做" : ""}"></span><b>${淨(t.名字)}</b><span class="為">${淨(t.做什麼 || "")}</span></div>`))
+    .concat(幫.filter(h => !團.some(t => String(h.名字).includes(t.名字))).slice(-4).map(h => `<div class="員"><span class="點 ${h.在做 ? "在做" : ""}"></span><b>團隊成員</b><span class="為">${淨(h.名字)}</span></div>`));
+  $("團隊").innerHTML = 列.join("");
+  $("待辦").innerHTML = (c.待辦 || []).map(t => `<li class="${淨(t.狀態)}">${淨(t.內容)}</li>`).join("");
+}
+
+async function 讀資料() {
+  try {
+    const t = await (await fetch("/資料")).text();
+    if (t !== 上次資料) { 上次資料 = t; 畫資料(JSON.parse(t)); }
+    $("更新").textContent = "中控台連線中・" + new Date().toLocaleTimeString("zh-TW", { hour12:false });
+  } catch (e) { $("更新").textContent = "⚠ 中控台斷線了：回 OpenCode，按一下這個專案的「新增工作階段」，再重新整理這一頁"; }
+}
+async function 讀對話() {
+  try {
+    const t = await (await fetch("/對話")).text();
+    if (t !== 上次對話) { 上次對話 = t; 畫對話(JSON.parse(t)); }
+  } catch {}
+}
+// 八、我的公司加的：讀 公司/中控台加的.json（區：顯示一個檔；鍵：按下去跑一支程式）
+function 看路(檔) { return "/看/" + String(檔).split(/[\\/]/).map(encodeURIComponent).join("/"); }
+let 上次加的 = "", 區的時間 = {};
+function 畫加的(a) {
+  const 區們 = a.區 || [], 鍵們 = a.按鍵 || [], 紀 = a.跑的紀錄 || {};
+  $("加的說明").style.display = (區們.length || 鍵們.length) && !a.讀不了 ? "none" : "block";
+  if (a.讀不了) $("加的說明").textContent = a.讀不了 + "。在對話區跟 AI 代表說「中控台加的.json 讀不了，請修好」";
+  const 區樣 = JSON.stringify(區們);
+  if (區樣 !== $("加區們").dataset.樣) {
+    $("加區們").dataset.樣 = 區樣;
+    $("加區們").innerHTML = 區們.map((q, i) => {
+      const 副 = (String(q.檔案 || "").split(".").pop() || "").toLowerCase(), 路 = 看路(q.檔案 || "");
+      let 身 = `<pre data-讀="${淨(路)}">讀取中⋯</pre>`;
+      if (["html","htm","pdf"].includes(副)) 身 = `<iframe src="${淨(路)}"></iframe>`;
+      else if (["png","jpg","jpeg","gif","svg","webp"].includes(副)) 身 = `<img src="${淨(路)}" alt="">`;
+      else if (["mp4","webm"].includes(副)) 身 = `<video src="${淨(路)}" controls></video>`;
+      return `<div class="加區"><div class="頭"><b>${淨(q.標題)}</b><small>${淨(q.為什麼要看 || "")}</small><small>來源：${淨(q.檔案 || "")}</small></div>${身}</div>`;
+    }).join("");
+  }
+  // 有鍵剛跑完，區裡的東西可能變了，才重新讀；不然玩到一半的遊戲會被打斷
+  const 跑完 = Object.entries(紀).filter(([k, r]) => !r.正在跑 && r.結束).map(([k, r]) => k + r.結束).join("|");
+  const 要重讀 = 跑完 !== 區的時間.跑完; 區的時間.跑完 = 跑完;
+  $("加區們").querySelectorAll("pre[data-讀]").forEach(p => { if (要重讀 || p.textContent === "讀取中⋯") fetch(p.dataset.讀).then(r => r.text()).then(t => { p.textContent = t; }).catch(() => {}); });
+  if (要重讀 && 區的時間.畫過) $("加區們").querySelectorAll("iframe, img, video").forEach(f => { try { f.src = f.src.split("?")[0] + "?t=" + Date.now(); } catch {} });
+  區的時間.畫過 = true;
+  $("加鍵們").innerHTML = 鍵們.map(k => {
+    const r = 紀[k.名稱] || {};
+    const 狀 = r.正在跑 ? "正在跑⋯" : r.結束 ? (r.成功 ? "上次跑完了・" : "上次失敗了・") + new Date(r.結束).toLocaleTimeString("zh-TW", { hour12:false }) : "還沒按過";
+    return `<div class="加鍵"><div class="列"><button class="做" data-鍵="${淨(k.名稱)}" ${r.正在跑 ? "disabled" : ""}>${淨(k.名稱)}</button><small>${淨(k.做什麼 || "")}</small><small style="margin-left:auto">${淨(狀)}</small></div>`
+      + (r.輸出 ? `<details ${r.成功 === false ? "open" : ""}><summary><small>程式說了什麼</small></summary><pre>${淨(r.輸出)}</pre></details>` : "")
+      + (r.成功 === false ? `<small>失敗了：把上面的字整段複製，回 OpenCode 貼給你的 AI 分身，或在對話區請 AI 代表修。</small>` : "") + `</div>`;
+  }).join("");
+  $("加鍵們").querySelectorAll("button[data-鍵]").forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try { await 送("/按", { 名稱: b.dataset.鍵 }); } catch (e) { $("加的說明").style.display = "block"; $("加的說明").textContent = "沒按成：" + e.message; }
+    讀加的();
+  });
+}
+async function 讀加的() {
+  try {
+    const t = await (await fetch("/加的")).text();
+    if (t !== 上次加的) { 上次加的 = t; 畫加的(JSON.parse(t)); }
+  } catch {}
+}
+讀資料(); 讀對話(); 讀加的();
+setInterval(讀加的, 4000);
+setInterval(讀資料, 4000);
+setInterval(讀對話, 3000);
+</script>
+</body>
+</html>

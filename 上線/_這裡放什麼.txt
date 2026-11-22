@@ -1,0 +1,1 @@
+要交給客人、放上網路的成品，AI 團隊會把它整理成一個資料夾放在這裡（主檔叫 index.html），你再自己上傳到 GitHub Pages 或 Netlify Drop。

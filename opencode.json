@@ -1,0 +1,27 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/glm-5.3-flash-free",
+  "permission": {
+    "edit": {
+      "*": "allow",
+      "AGENTS.md": "deny",
+      "opencode.json": "deny",
+      "中控台基本款-原版/*": "deny",
+      "中控台基本款.md": "deny"
+    },
+    "bash": {
+      "*": "allow",
+      "rm *": "deny",
+      "rmdir *": "deny",
+      "del *": "deny",
+      "erase *": "deny",
+      "Remove-Item *": "deny",
+      "rd *": "deny",
+      "sudo *": "deny",
+      "git push*": "deny"
+    },
+    "external_directory": "deny",
+    "webfetch": "allow",
+    "websearch": "allow"
+  }
+}

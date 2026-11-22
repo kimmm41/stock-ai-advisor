@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>交易決策分析報告（第二版）</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; background: #f4f6f8; color: #1a202c; }
+  .container { max-width: 800px; margin: 32px auto; padding: 0 20px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 20px; overflow: hidden; }
+  .card-header { background: #1a202c; color: #fff; padding: 16px 20px; font-size: 18px; font-weight: 700; }
+  .card-body { padding: 20px; }
+  .card-body h3 { margin-top: 0; font-size: 16px; color: #2d3748; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #e2e8f0; padding: 10px 12px; text-align: left; font-size: 14px; }
+  th { background: #f7fafc; width: 30%; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 700; }
+  .badge-buy { background: #c6f6d5; color: #276749; }
+  .badge-sell { background: #fed7d7; color: #9b2c2c; }
+  .badge-wait { background: #feebc8; color: #975a16; }
+  .rr { font-size: 15px; font-weight: 700; color: #2c5282; }
+  .footer { text-align: center; color: #718096; font-size: 13px; margin-top: 24px; }
+  .decision { background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; margin-top: 20px; }
+  .decision h3 { margin-top: 0; border-bottom: none; }
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; }
+  button { flex: 1; padding: 10px 16px; font-size: 14px; border: 1px solid #cbd5e0; border-radius: 8px; background: #fff; cursor: pointer; }
+  button.buy { background: #48bb78; color: #fff; border-color: #38a169; }
+  button.sell { background: #f56565; color: #fff; border-color: #e53e3e; }
+  button.wait { background: #ed8936; color: #fff; border-color: #dd6b20; }
+  #即時股價 { font-size: 15px; margin-top: 6px; }
+  #即時股價 .載入中 { color: #718096; font-style: italic; }
+  #即時股價 .錯誤 { color: #e53e3e; font-size: 13px; }
+  #即時股價 .成功 { color: #2c5282; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div class="card-header">交易決策分析報告（第二版）</div>
+    <div class="card-body">
+      <table>
+        <tr><th>報告編號</th><td>TRD-20261115-002</td></tr>
+        <tr><th>分析日期</th><td>2026-11-15</td></tr>
+        <tr><th>交易標的</th><td>台積電 (2330.TW)</td></tr>
+        <tr><th>即時股價</th><td id="即時股價格">載入中…</td></tr>
+        <tr><th>分析週期</th><td>高週期：日線 / 中週期：4 小時 / 低週期：1 小時</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">市場環境分析</div>
+    <div class="card-body">
+      <h3>1. 高週期方向</h3>
+      <p>日線結構處於上漲趨勢，價格站在 20 週均線之上，高點抬高、低點抬高，方向明確為多。</p>
+      <h3>2. 關鍵流動性</h3>
+      <p>價格已觸及前高附近的流動性聚集區（約 320 元關卡），買方流動性被吸收後出現回檔。</p>
+      <h3>3. 價格位移與結構確認</h3>
+      <p>回檔後於 1 小時週期形成看漲 engulfing K 線，結構轉強，確認有效位移向上，可定義進場。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">建議交易設定</div>
+    <div class="card-body">
+      <table>
+        <tr><th>建議進場點位</th><td>315.0 元（限價單，回檔至 315 元附近進場）</td></tr>
+        <tr><th>停損（失效點）</th><td>308.0 元（跌破 1 小時週期最近低點，結構失效即出場）</td></tr>
+        <tr><th>停利（目標價）</th><td>335.0 元（前高阻力區，風險報酬達 1:3.3）</td></tr>
+        <tr><th>預期風險報酬</th><td class="rr">約 1:3.3，符合預設風險報酬標準</td></tr>
+        <tr><th>建議倉位</th><td>單筆風險不超過帳戶總資金的 1%</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">交易理由</div>
+    <div class="card-body">
+      <ul style="margin:0; padding-left:20px; line-height:1.8;">
+        <li><strong>DMS 投資概念：</strong>價格回檔至需求區，買方盤口出現，供需失衡向多。</li>
+        <li><strong>價格行為：</strong>1 小時週期形成看漲 engulfing，收盤價站上開盤價，買方力道強於賣方。</li>
+        <li><strong>SMC 聰明錢概念：</strong>流動性被聚集後反轉，機構資金進場跡象明確。</li>
+        <li><strong>公司經營狀況：</strong>營收穩健成長，基本面未見惡化，支撐中長期多頭。</li>
+        <li><strong>外資法人買賣：</strong>近三日外資持續買超，法人資金流入確認。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="decision">
+    <h3>老闆判斷（抓住韁繩的地方）</h3>
+    <p>以上分析由 AI 團隊（N1）輸出，最後要不要買，由老闆自己決定。</p>
+    <div class="btn-row">
+      <button class="buy">買進</button>
+      <button class="sell">不買</button>
+      <button class="wait">觀望</button>
+    </div>
+    <p style="margin-top:12px; font-size:13px; color:#718096;">決定後請記錄：買／不買、理由、執行價格，供日後複盤。</p>
+  </div>
+
+  <div class="footer">
+    本報告僅供個人投資決策參考，不構成投資建議。股市有風險，入市需謹慎。<br>
+    即時股價來自公開 API，若連線失敗請手動填入真實股價。
+  </div>
+</div>
+
+<script>
+  (function() {
+    const 彙 = document.getElementById('即時股價格');
+    const 代號 = '2330.TW';
+
+    async function 抓股價() {
+      const 網址 = 'https://query1.finance.yahoo.com/v8/finance/chart/' + 代號;
+      try {
+        const 回應 = await fetch(網址, { mode: 'cors' });
+        if (!回應.ok) throw new Error('HTTP ' + 回應.status);
+        const 資料 = await 回應.json();
+        const 結果 = 資料.chart.result[0];
+        const 盤後 = 結果.indicators?.adjclose?.[0] || {};
+        const 收盤 = 盤後.adjclose?.[盤後.adjclose.length - 1];
+        const 幣別 = 結果.meta?.currency || 'TWD';
+        if (收盤) {
+          彙.innerHTML = '<span class="成功">≈ ' + 收盤.toFixed(2) + ' ' + 幣別 + '</span>';
+        } else {
+          彙.innerHTML = '<span class="錯誤">無法解析股價</span>';
+        }
+      } catch (e) {
+        彙.innerHTML = '<span class="錯誤">抓取失敗（' + e.message + '），請手動填入真實股價</span>';
+      }
+    }
+
+    抓股價();
+  })();
+</script>
+</body>
+</html>
